@@ -18,15 +18,23 @@ class HomeScreen extends ConsumerWidget {
     final psalm = controller.currentPsalm;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          await ref.read(ttsServiceProvider).stop();
-          await ref.read(appControllerProvider).fetchNewPsalm();
-        },
-        backgroundColor: const Color(0xFF0B1830).withValues(alpha: 0.98),
-        child: Icon(Icons.refresh_outlined, color: Colors.white, size: 42),
-      ),
-      backgroundColor: Theme.of(context).iconTheme.color,
+      floatingActionButton: psalm == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () async {
+                await ref.read(ttsServiceProvider).stop();
+                await ref.read(appControllerProvider).fetchNewPsalm();
+              },
+              icon: controller.isRefreshing
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_awesome_rounded),
+              label: const Text('Novo Salmo'),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      backgroundColor: Colors.transparent,
       bottomNavigationBar: psalm == null
           ? null
           : const AppFooterNav(current: AppFooterDestination.home),
@@ -36,12 +44,14 @@ class HomeScreen extends ConsumerWidget {
             slivers: [
               SliverAppBar(
                 backgroundColor: Colors.transparent,
-                pinned: true,
-                title: const Text(AppStrings.appName),
-                floating: true,
+                surfaceTintColor: Colors.transparent,
+                pinned: false,
+                toolbarHeight: 86,
+                titleSpacing: 20,
+                title: const _HomeHeader(),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                 sliver: SliverToBoxAdapter(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 320),
@@ -84,6 +94,50 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(17),
+          ),
+          child: const Icon(Icons.wb_sunny_outlined),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.appName,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Uma palavra para iluminar seu dia',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

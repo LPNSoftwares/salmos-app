@@ -1,0 +1,769 @@
+openapi: 3.1.0
+info:
+  title: BIBLIAAPI
+  version: "2.0-laravel"
+  summary: API biblica versionada da BIBLIAAPI em Laravel.
+servers:
+  - url: http://127.0.0.1:8090/api/v2
+    description: Ambiente local Laravel
+tags:
+  - name: Status
+  - name: Versoes
+  - name: Livros
+  - name: Versiculos
+  - name: Leitor
+  - name: App
+paths:
+  /:
+    get:
+      tags: [Status]
+      summary: Mostra status e links principais da API.
+      responses:
+        "200":
+          description: API online.
+  /versions:
+    get:
+      tags: [Versoes]
+      summary: Lista versoes biblicas disponiveis.
+      responses:
+        "200":
+          description: Lista de versoes.
+  /versions/{version}:
+    get:
+      tags: [Versoes]
+      summary: Mostra metadados de uma versao.
+      parameters:
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200":
+          description: Metadados da versao.
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /books:
+    get:
+      tags: [Livros]
+      summary: Lista os 66 livros canonicos.
+      responses:
+        "200":
+          description: Lista de livros.
+  /versions/{version}/books:
+    get:
+      tags: [Livros]
+      summary: Lista livros usando os nomes da versao informada.
+      parameters:
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200":
+          description: Lista de livros da versao.
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /versions/{version}/books/{book}:
+    get:
+      tags: [Livros]
+      summary: Mostra um livro por abreviacao, numero, alias ou nome.
+      parameters:
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/Book"
+      responses:
+        "200":
+          description: Livro encontrado.
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /versions/{version}/books/{book}/chapters/{chapter}:
+    get:
+      tags: [Versiculos]
+      summary: Retorna um capitulo completo.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/Book"
+        - $ref: "#/components/parameters/Chapter"
+      responses:
+        "200":
+          description: Capitulo completo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/QuotaExceeded"
+  /versions/{version}/books/{book}/chapters/{chapter}/verses/{verse}:
+    get:
+      tags: [Versiculos]
+      summary: Retorna um versiculo especifico.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/Book"
+        - $ref: "#/components/parameters/Chapter"
+        - $ref: "#/components/parameters/Verse"
+      responses:
+        "200":
+          description: Versiculo encontrado.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /versions/{version}/books/{book}/chapters/{chapter}/verses/{verse}/cross-references:
+    get:
+      tags: [Leitor]
+      summary: Retorna referencias cruzadas curadas para um versiculo.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/Book"
+        - $ref: "#/components/parameters/Chapter"
+        - $ref: "#/components/parameters/Verse"
+      responses:
+        "200":
+          description: Referencias cruzadas do versiculo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /versions/{version}/random:
+    get:
+      tags: [Versiculos]
+      summary: Retorna um versiculo aleatorio da versao.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Version"
+      responses:
+        "200":
+          description: Versiculo aleatorio.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /versions/{version}/books/{book}/random:
+    get:
+      tags: [Versiculos]
+      summary: Retorna um versiculo aleatorio de um livro.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Version"
+        - $ref: "#/components/parameters/Book"
+      responses:
+        "200":
+          description: Versiculo aleatorio.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /versions/{version}/search:
+    get:
+      tags: [Versiculos]
+      summary: Busca texto na versao informada.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Version"
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          example: amor
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+      responses:
+        "200":
+          description: Resultado da busca.
+        "400":
+          description: Busca invalida.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /reader/favorites:
+    get:
+      tags: [Leitor]
+      summary: Lista favoritos do usuario da chave de API.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Favoritos do leitor.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Leitor]
+      summary: Cria ou atualiza um favorito de versiculo.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderFavoriteInput"
+      responses:
+        "201":
+          description: Favorito salvo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Dados invalidos.
+  /reader/notes:
+    get:
+      tags: [Leitor]
+      summary: Lista notas privadas do usuario da chave de API.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Notas do leitor.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Leitor]
+      summary: Cria ou atualiza uma nota privada de versiculo.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderNoteInput"
+      responses:
+        "201":
+          description: Nota salva.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Dados invalidos.
+  /reader/highlights:
+    get:
+      tags: [Leitor]
+      summary: Lista marca-textos do usuario da chave de API.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Marca-textos do leitor.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Leitor]
+      summary: Cria ou atualiza um marca-texto de versiculo.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderHighlightInput"
+      responses:
+        "201":
+          description: Marca-texto salvo.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Dados invalidos.
+  /reader/reading-plans:
+    get:
+      tags: [Leitor]
+      summary: Lista planos de leitura publicos com progresso do usuario.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        "200":
+          description: Planos de leitura.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /reader/reading-plans/{readingPlan}:
+    get:
+      tags: [Leitor]
+      summary: Mostra um plano de leitura com etapas e progresso.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: readingPlan
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Plano de leitura.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /reader/reading-plans/{readingPlan}/steps/{step}:
+    patch:
+      tags: [Leitor]
+      summary: Marca ou desmarca uma etapa do plano como concluida.
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: readingPlan
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: step
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                completed:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Progresso atualizado.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /app/reader/crescanafe/content:
+    get:
+      tags: [App]
+      summary: Lista conteudo editorial do site Cresca na Fe (proxy WordPress via Laravel).
+      description: |
+        BFF sem autenticacao. `resource=posts` usa `wp/v2/posts`; demais valores usam JetEngine `jet-cct/{slug}` quando a REST estiver ativa no WordPress.
+        Para `resource=pedidos_oracao`, a listagem aplica filtro de publicacao (status publicavel e autorizacao de publicacao, quando presente).
+        Quando `meta.reader_expose` e `false` (env `BIBLIAPI_CRESCANAFE_READER_EXPOSE`), a resposta e 200 com `data: []` sem consultar o WordPress; integracao admin permanece independente.
+        Ver `docs/CRESCA_NA_FE_WORDPRESS.md`.
+      parameters:
+        - name: resource
+          in: query
+          required: false
+          schema:
+            type: string
+            default: posts
+            enum: [posts, pedidos_oracao, igrejas, testemunhos]
+          description: Tipo de conteudo a buscar no upstream.
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Apenas para resource=posts.
+        - name: categories
+          in: query
+          required: false
+          schema:
+            type: string
+          description: ID de categoria WordPress; apenas para resource=posts.
+      responses:
+        "200":
+          description: Lista normalizada, lista vazia com integracao desligada ou com leitor sem exposicao publica.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrescanafeContentResponse"
+        "400":
+          description: Parametro resource invalido.
+        "502":
+          description: Falha ao obter conteudo no WordPress.
+  /app/reader/crescanafe/prayer-request-settings:
+    get:
+      tags: [App]
+      summary: Metadados do formulario de pedido (ex. Cloudflare Turnstile).
+      description: |
+        Retorna `turnstile_site_key` (publica) e `turnstile_required` quando `CRESCANAFE_PRAYER_TURNSTILE_SECRET_KEY`
+        esta definido no servidor e o leitor expoe Cresça na Fé (`BIBLIAPI_CRESCANAFE_READER_EXPOSE`).
+        Quando `meta.reader_expose` e `false`, os campos de Turnstile vêm nulos/desligados para o cliente nao iniciar o fluxo de pedido no app.
+        O app deve enviar `turnstile_token` no POST de pedidos quando obrigatorio.
+      responses:
+        "200":
+          description: Configuracao atual para o cliente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrescanafePrayerRequestSettingsResponse"
+  /app/reader/crescanafe/prayer-requests:
+    post:
+      tags: [App]
+      summary: Envia pedido de oracao ao Cresca na Fe via BFF seguro.
+      description: |
+        Endpoint publico para app/site enviarem pedidos sem expor credenciais WordPress no cliente.
+        O Laravel valida payload, opcionalmente Cloudflare Turnstile (`turnstile_token` quando configurado),
+        aplica limitacao por IP e encaminha para o CCT JetEngine configurado.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrescanafePrayerRequestInput"
+      responses:
+        "201":
+          description: Pedido recebido com sucesso.
+        "403":
+          description: Leitor sem exposicao publica (`error.code` crescanafe_reader_hidden).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppJsonError"
+        "422":
+          description: Dados invalidos, captcha falhou (code captcha_failed) ou sem autorizacao de publicacao.
+        "429":
+          description: Limite de requisicoes excedido no periodo.
+        "503":
+          description: Integracao Cresça desligada no servidor (`error.code` crescanafe_disabled).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppJsonError"
+        "502":
+          description: Falha ao enviar pedido para o WordPress.
+  /app/support/tickets:
+    post:
+      tags: [App]
+      summary: Abre um ticket de feedback ou suporte pelo app mobile autenticado.
+      security:
+        - MobileSessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppSupportTicketInput"
+      responses:
+        "201":
+          description: Ticket aberto para triagem.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Dados invalidos.
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API key
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    MobileSessionAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Mobile session token
+  parameters:
+    Version:
+      name: version
+      in: path
+      required: true
+      schema:
+        type: string
+      example: ACF
+    Book:
+      name: book
+      in: path
+      required: true
+      schema:
+        type: string
+      examples:
+        genesis:
+          value: gn
+        joao:
+          value: jo
+        salmos:
+          value: salmos
+    Chapter:
+      name: chapter
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 3
+    Verse:
+      name: verse
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      example: 16
+  schemas:
+    ReaderReferenceInput:
+      type: object
+      required: [version, book_id, chapter, verse]
+      properties:
+        version:
+          type: string
+          example: ACF
+        book_id:
+          type: integer
+          minimum: 1
+          maximum: 66
+          example: 43
+        chapter:
+          type: integer
+          minimum: 1
+          example: 3
+        verse:
+          type: integer
+          minimum: 1
+          example: 16
+    ReaderFavoriteInput:
+      allOf:
+        - $ref: "#/components/schemas/ReaderReferenceInput"
+        - type: object
+          properties:
+            label:
+              type: string
+              maxLength: 120
+              example: Versiculo-chave
+    ReaderNoteInput:
+      allOf:
+        - $ref: "#/components/schemas/ReaderReferenceInput"
+        - type: object
+          required: [body]
+          properties:
+            body:
+              type: string
+              minLength: 2
+              maxLength: 5000
+              example: Nota pessoal para estudo.
+            visibility:
+              type: string
+              enum: [private]
+              default: private
+    ReaderHighlightInput:
+      allOf:
+        - $ref: "#/components/schemas/ReaderReferenceInput"
+        - type: object
+          required: [color]
+          properties:
+            color:
+              type: string
+              enum: [yellow, green, blue, rose]
+              example: yellow
+    ReadingPlanSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        duration_days:
+          type: integer
+        difficulty:
+          type: string
+        steps_count:
+          type: integer
+        completed_steps:
+          type: integer
+        progress_percent:
+          type: integer
+        editorial_tags:
+          type: array
+          description: Tags editoriais para curadoria de trilhas no app.
+          items:
+            type: string
+          example: [new_believer, family]
+    CrescanafeContentResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrescanafeContentItem"
+        meta:
+          $ref: "#/components/schemas/CrescanafeReaderContentMeta"
+    CrescanafeReaderContentMeta:
+      type: object
+      description: Metadados do BFF; campos extras podem ser adicionados sem quebrar clientes.
+      properties:
+        enabled:
+          type: boolean
+          description: Integracao WordPress ativa (`CRESCANAFE_WP_ENABLED`).
+        reader_expose:
+          type: boolean
+          description: Listagens e fluxo de pedido no leitor BIBLIAAPI permitidos (`BIBLIAPI_CRESCANAFE_READER_EXPOSE`).
+        source:
+          type: string
+          example: wordpress
+        message:
+          type: string
+        site:
+          type: string
+          description: Base URL do WordPress quando aplicavel.
+        resource:
+          type: string
+          description: Recurso efetivo da listagem (posts, pedidos_oracao, etc.).
+      additionalProperties: true
+    CrescanafePrayerRequestSettingsResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [turnstile_site_key, turnstile_required]
+          properties:
+            turnstile_site_key:
+              type: string
+              nullable: true
+            turnstile_required:
+              type: boolean
+        meta:
+          type: object
+          properties:
+            source:
+              type: string
+              example: bibliaapi
+            reader_expose:
+              type: boolean
+          additionalProperties: true
+    AppJsonError:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: crescanafe_reader_hidden
+            message:
+              type: string
+    CrescanafeContentItem:
+      type: object
+      description: Item normalizado (post WP ou item JetEngine CCT).
+      properties:
+        wp_id:
+          type: integer
+          description: ID no WordPress (post) ou _ID do CCT.
+        slug:
+          type: string
+        title:
+          type: string
+        excerpt:
+          type: string
+        url:
+          type: string
+          description: Link publico quando o upstream expuser.
+        published_at:
+          type: string
+        modified_at:
+          type: string
+        featured_image:
+          type: string
+          nullable: true
+        kind:
+          type: string
+          enum: [post, jet_cct]
+        cct_slug:
+          type: string
+          description: Preenchido quando kind=jet_cct.
+    CrescanafePrayerRequestInput:
+      type: object
+      required: [name, request, accept_publication]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+          example: Ana Souza
+        city:
+          type: string
+          maxLength: 120
+          nullable: true
+          example: Recife
+        request:
+          type: string
+          minLength: 8
+          maxLength: 2000
+          example: Peço oração pela restauração da minha família.
+        accept_publication:
+          type: boolean
+          description: Deve ser true para envio do pedido.
+          example: true
+        website:
+          type: string
+          nullable: true
+          description: Honeypot anti-spam; deve permanecer vazio.
+        turnstile_token:
+          type: string
+          nullable: true
+          description: Token Cloudflare Turnstile; obrigatorio quando o servidor exige (ver GET prayer-request-settings).
+    AppSupportTicketInput:
+      type: object
+      required: [subject, category, message]
+      properties:
+        subject:
+          type: string
+          minLength: 3
+          maxLength: 190
+          example: Problema no leitor mobile
+        category:
+          type: string
+          enum: [bug, content, feature, support, account]
+          example: bug
+        message:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          example: Ao alternar capitulos no beta, notei lentidao perceptivel.
+        context:
+          type: object
+          additionalProperties: true
+          description: Contexto tecnico minimo do app. Conteudo privado nao deve ser enviado.
+  responses:
+    Unauthorized:
+      description: Chave de API ausente, invalida ou inativa.
+    NotFound:
+      description: Recurso nao encontrado.
+    QuotaExceeded:
+      description: Limite mensal do plano atingido.

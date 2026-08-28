@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../../features/psalm/presentation/app_controller.dart';
 import '../../features/tts/tts_service.dart';
 
@@ -15,95 +14,69 @@ class AppFooterNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selectedIndex = switch (current) {
+      AppFooterDestination.home => 0,
+      AppFooterDestination.favorites => 1,
+      AppFooterDestination.search => 2,
+      AppFooterDestination.history => 3,
+      AppFooterDestination.settings => 4,
+      null => 0,
+    };
     return SafeArea(
       top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF0B1830).withValues(alpha: 0.98)
-              : Theme.of(context).colorScheme.surface.withValues(alpha: 0.98),
-          border: Border(
-            top: BorderSide(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.18),
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _FooterButton(
-              icon: Icons.home,
-              label: 'Salmos',
-              selected: current == AppFooterDestination.home,
-              onTap: () async {
-                context.go('/');
-              },
-            ),
-            _FooterButton(
-              icon: Icons.favorite_rounded,
-              label: 'Favoritos',
-              selected: current == AppFooterDestination.favorites,
-              onTap: () => context.go('/favorites'),
-            ),
-            _FooterButton(
-              icon: Icons.search_rounded,
-              label: 'Pesquisar',
-              selected: current == AppFooterDestination.search,
-              onTap: () => _showPsalmSearch(context, ref),
-            ),
-            _FooterButton(
-              icon: Icons.history_rounded,
-              label: 'Histórico',
-              selected: current == AppFooterDestination.history,
-              onTap: () => context.go('/history'),
-            ),
-            _FooterButton(
-              icon: Icons.settings_rounded,
-              label: 'Configurar',
-              selected: current == AppFooterDestination.settings,
-              onTap: () => context.go('/settings'),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.10),
+              blurRadius: 28,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FooterButton extends StatelessWidget {
-  const _FooterButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    required this.selected,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = isDark
-        ? selected
-              ? Theme.of(context).colorScheme.secondary
-              : Colors.white.withValues(alpha: 0.78)
-        : AppTheme.royalBlue;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color),
-            const SizedBox(height: 3),
-            Text(label, style: TextStyle(color: color, fontSize: 11)),
+        child: NavigationBar(
+          selectedIndex: selectedIndex,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          onDestinationSelected: (index) {
+            switch (index) {
+              case 0:
+                context.go('/');
+              case 1:
+                context.go('/favorites');
+              case 2:
+                _showPsalmSearch(context, ref);
+              case 3:
+                context.go('/history');
+              case 4:
+                context.go('/settings');
+            }
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.auto_stories_outlined),
+              selectedIcon: Icon(Icons.auto_stories_rounded),
+              label: 'Salmos',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.favorite_border_rounded),
+              selectedIcon: Icon(Icons.favorite_rounded),
+              label: 'Favoritos',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.search_rounded),
+              selectedIcon: Icon(Icons.search_rounded),
+              label: 'Pesquisar',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.history_rounded),
+              selectedIcon: Icon(Icons.history_rounded),
+              label: 'Histórico',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.tune_rounded),
+              selectedIcon: Icon(Icons.tune_rounded),
+              label: 'Ajustes',
+            ),
           ],
         ),
       ),
@@ -115,9 +88,9 @@ Future<void> _showPsalmSearch(BuildContext context, WidgetRef ref) async {
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF061B33),
+    backgroundColor: Theme.of(context).colorScheme.surface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
     ),
     builder: (context) => _PsalmSearchSheet(ref: ref),
   );
@@ -156,31 +129,46 @@ class _PsalmSearchSheetState extends State<_PsalmSearchSheet> {
             : Padding(
                 key: const ValueKey('form'),
                 padding: EdgeInsets.fromLTRB(
-                  18,
-                  18,
-                  18,
-                  MediaQuery.of(context).viewInsets.bottom + 18,
+                  20,
+                  20,
+                  20,
+                  MediaQuery.of(context).viewInsets.bottom + 24,
                 ),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _textController,
-                        keyboardType: TextInputType.number,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Pesquisar Salmo',
-                          hintText: 'Digite 1 a 150',
-                          prefixIcon: Icon(Icons.search_rounded),
-                          border: OutlineInputBorder(),
-                        ),
-                        onSubmitted: (_) => _search(),
-                      ),
+                    Text(
+                      'Encontre um Salmo',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
                     ),
-                    const SizedBox(width: 10),
-                    FilledButton(
-                      onPressed: _loading ? null : _search,
-                      child: const Text('Ver'),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Digite um número entre 1 e 150.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 18),
+                    TextField(
+                      controller: _textController,
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Número do Salmo',
+                        hintText: 'Ex.: 23',
+                        prefixIcon: Icon(Icons.search_rounded),
+                        border: OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => _search(),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _loading ? null : _search,
+                        icon: const Icon(Icons.search_rounded),
+                        label: const Text('Abrir Salmo'),
+                      ),
                     ),
                   ],
                 ),

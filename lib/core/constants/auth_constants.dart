@@ -1,6 +1,5 @@
 class AuthConstants {
-  static const email = String.fromEnvironment('ABIBLIA_EMAIL');
-  static const password = String.fromEnvironment('ABIBLIA_PASSWORD');
+  static const apiKey = String.fromEnvironment('BIBLIA_API_KEY');
 
-  static bool get hasCredentials => email.isNotEmpty && password.isNotEmpty;
+  static bool get hasApiKey => apiKey.isNotEmpty;
 }

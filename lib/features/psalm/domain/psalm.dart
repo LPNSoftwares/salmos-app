@@ -12,18 +12,28 @@ class Psalm {
     required this.receivedAt,
   });
 
-  factory Psalm.fromApi(Map<String, dynamic> json) {
+  factory Psalm.fromApi(
+    Map<String, dynamic> json, {
+    String fallbackVersion = 'nvi',
+  }) {
     final book = json['book'] as Map<String, dynamic>? ?? {};
-    final abbrev = book['abbrev'] as Map<String, dynamic>? ?? {};
-    final chapter = json['chapter'] as int? ?? 0;
-    final number = json['number'] as int? ?? 0;
-    final version = (book['version'] as String? ?? '').toLowerCase();
+    final rawAbbrev = book['abbrev'];
+    final abbrev = rawAbbrev is Map<String, dynamic>
+        ? rawAbbrev['pt'] as String?
+        : rawAbbrev as String?;
+    final chapter = _asInt(json['chapter']);
+    final number = _asInt(json['verse'] ?? json['number']);
+    final version =
+        (json['version'] as String? ??
+                book['version'] as String? ??
+                fallbackVersion)
+            .toLowerCase();
     final text = json['text'] as String? ?? '';
 
     return Psalm(
-      id: '${version}_${abbrev['pt'] ?? 'sl'}_${chapter}_$number',
+      id: '${version}_${abbrev ?? 'sl'}_${chapter}_$number',
       bookName: book['name'] as String? ?? 'Salmos',
-      bookAbbrev: abbrev['pt'] as String? ?? 'sl',
+      bookAbbrev: abbrev ?? 'sl',
       version: version.isEmpty ? 'nvi' : version,
       chapter: chapter,
       number: number,
@@ -88,4 +98,11 @@ class Psalm {
   }
 
   String encode() => jsonEncode(toJson());
+
+  static int _asInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
 }

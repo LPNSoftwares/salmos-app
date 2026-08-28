@@ -1,6 +1,6 @@
 # Salmo do Dia
 
-Aplicativo Flutter offline-friendly para ler, ouvir, favoritar, receber notificações e compartilhar Salmos usando a API A Bíblia Digital.
+Aplicativo Flutter offline-friendly para ler, ouvir, favoritar, receber notificações e compartilhar Salmos usando a Bíblia API.
 
 ## Como Rodar
 
@@ -12,7 +12,7 @@ flutter run
 Para usar a API autenticada, informe as credenciais fora do código-fonte:
 
 ```bash
-flutter run --dart-define=ABIBLIA_EMAIL=seu_email --dart-define=ABIBLIA_PASSWORD=sua_senha
+flutter run --dart-define=BIBLIA_API_KEY=sua_chave_bapi
 ```
 
 Validações usadas durante o desenvolvimento:
@@ -25,7 +25,7 @@ flutter test
 
 ## Packages Usadas
 
-- `dio`: cliente HTTP para A Bíblia Digital.
+- `dio`: cliente HTTP para a Bíblia API.
 - `flutter_riverpod`: estado da aplicação.
 - `shared_preferences`: cache, favoritos, histórico, configurações e controle de requisições.
 - `flutter_local_notifications`: notificações locais.
@@ -41,24 +41,26 @@ flutter test
 Base URL:
 
 ```text
-https://www.abibliadigital.com.br/api
+https://bibliaapi.com.br/api/v2
 ```
 
 Endpoint principal:
 
 ```text
-GET /verses/{version}/sl/random
+GET /versions/{version}/books/sl/random
 ```
 
 Busca de Salmo completo:
 
 ```text
-GET /verses/{version}/sl/{chapter}
+GET /versions/{version}/books/sl/chapters/{chapter}
 ```
 
-Quando `ABIBLIA_EMAIL` e `ABIBLIA_PASSWORD` são informados por `--dart-define`, o app faz login em `PUT /users/token`, mantém o token apenas em memória durante a sessão e envia `Authorization: Bearer ...` nas chamadas de Salmos. As credenciais não ficam salvas no repositório.
+Informe a chave criada no painel da Bíblia API por `--dart-define=BIBLIA_API_KEY=...`. O app envia a chave no header `X-API-Key`; ela não fica salva no repositório.
 
-O app usa `nvi` como versão padrão, mantém cache local e controla a frequência de chamadas para evitar excesso de requisições.
+> Atenção: `--dart-define` impede o segredo de entrar no Git, mas a chave ainda pode ser extraída do binário de um aplicativo público. Para proteção forte em produção, encaminhe as chamadas por um backend próprio e mantenha a chave apenas no servidor.
+
+O app usa `nvi` como versão padrão e mantém cache local para continuar funcionando quando a API estiver indisponível. Também oferece `acf` e `ara`, disponíveis no catálogo v2.
 
 ## Notificações
 
@@ -137,7 +139,7 @@ Esses arquivos são locais e ignorados pelo Git. Guarde uma cópia segura deles,
 Build App Bundle:
 
 ```bash
-flutter build appbundle --release --build-name=1.0.0 --build-number=1 --dart-define=ABIBLIA_EMAIL=seu_email --dart-define=ABIBLIA_PASSWORD=sua_senha
+flutter build appbundle --release --build-name=1.0.1 --build-number=2 --dart-define=BIBLIA_API_KEY=sua_chave_bapi
 ```
 
 Artefato gerado:

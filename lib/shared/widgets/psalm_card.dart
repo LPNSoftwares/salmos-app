@@ -32,7 +32,7 @@ class PsalmCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return GlassCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -40,11 +40,18 @@ class PsalmCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppTheme.gold.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.softGold.withValues(alpha: 0.30),
+                      AppTheme.gold.withValues(alpha: 0.10),
+                    ],
+                  ),
                 ),
                 child: Icon(
                   Icons.auto_stories_rounded,
@@ -76,59 +83,73 @@ class PsalmCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              IconButton(
-                onPressed: onFavorite,
-                icon: Icon(
-                  isFavorite
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
+              Tooltip(
+                message: isFavorite ? 'Remover dos favoritos' : 'Favoritar',
+                child: Material(
                   color: isFavorite
-                      ? AppTheme.softGold
-                      : Theme.of(context).iconTheme.color,
-                  size: 42,
+                      ? AppTheme.gold.withValues(alpha: 0.16)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(17),
+                  child: IconButton(
+                    onPressed: onFavorite,
+                    icon: Icon(
+                      isFavorite
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      color: isFavorite
+                          ? AppTheme.gold
+                          : Theme.of(context).iconTheme.color,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const Divider(height: 16, color: Colors.blueGrey),
+          const SizedBox(height: 18),
+          Divider(color: Theme.of(context).dividerColor),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _ImageAction(
-                asset: 'assets/icons/completed.png',
-                tooltip: 'Salmo completo',
+              _PsalmAction(
+                icon: Icons.menu_book_rounded,
+                label: 'Completo',
                 onPressed: onReadFullChapter,
               ),
-              _ImageAction(
-                asset: 'assets/icons/font_decrease.png',
-                tooltip: 'Diminuir letra',
+              _PsalmAction(
+                icon: Icons.text_decrease_rounded,
+                label: 'Menor',
                 onPressed: onFontDecrease,
               ),
-              _ImageAction(
-                asset: 'assets/icons/shared.png',
-                tooltip: 'Compartilhar',
+              _PsalmAction(
+                icon: Icons.ios_share_rounded,
+                label: 'Enviar',
                 onPressed: onShare,
               ),
-              _ImageAction(
-                asset: 'assets/icons/font_increase.png',
-                tooltip: 'Aumentar letra',
+              _PsalmAction(
+                icon: Icons.text_increase_rounded,
+                label: 'Maior',
                 onPressed: onFontIncrease,
               ),
-              _ImageAction(
-                asset: 'assets/icons/listen.png',
-                tooltip: 'Ouvir',
+              _PsalmAction(
+                icon: Icons.headphones_rounded,
+                label: 'Ouvir',
                 onPressed: onListen,
               ),
             ],
           ),
-          const Divider(height: 16, color: Colors.blueGrey),
+          const SizedBox(height: 14),
+          Divider(color: Theme.of(context).dividerColor),
+          const SizedBox(height: 18),
           Text(
             psalm.text,
-            textAlign: TextAlign.justify,
+            textAlign: TextAlign.start,
             style: textTheme.headlineSmall?.copyWith(
-              fontSize: 25 * fontScale,
-              height: 1.2,
+              fontSize: 24 * fontScale,
+              height: 1.35,
               fontWeight: FontWeight.w600,
+              letterSpacing: 0.1,
             ),
           ),
         ],
@@ -137,28 +158,54 @@ class PsalmCard extends StatelessWidget {
   }
 }
 
-class _ImageAction extends StatelessWidget {
-  const _ImageAction({
-    required this.tooltip,
+class _PsalmAction extends StatelessWidget {
+  const _PsalmAction({
+    required this.icon,
+    required this.label,
     required this.onPressed,
-    this.asset,
   });
 
-  final String? asset;
-  final String tooltip;
+  final IconData icon;
+  final String label;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Tooltip(
-        message: tooltip,
+      child: Semantics(
+        button: true,
+        label: label,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(12),
-          child: AspectRatio(
-            aspectRatio: 1.1,
-            child: Image.asset(asset!, fit: BoxFit.contain),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Icon(icon, size: 22),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

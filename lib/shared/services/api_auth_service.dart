@@ -10,46 +10,26 @@ final apiAuthServiceProvider = Provider<ApiAuthService>((ref) {
 });
 
 class ApiAuthService {
-  ApiAuthService(this._dio);
+  ApiAuthService(this._dio, {String? apiKey})
+    : _apiKey = apiKey ?? AuthConstants.apiKey;
 
   final Dio _dio;
-  String? _token;
+  final String _apiKey;
+  bool _configured = false;
 
-  bool get isConfigured => AuthConstants.hasCredentials;
+  bool get isConfigured => _apiKey.isNotEmpty;
 
   Future<void> ensureAuthenticated() async {
-    if (!isConfigured || _token != null) {
+    if (_configured) {
       return;
     }
-
-    try {
-      final response = await _dio.put<Map<String, dynamic>>(
-        '/users/token',
-        data: {
-          'email': AuthConstants.email,
-          'password': AuthConstants.password,
-        },
-        options: Options(
-          headers: const {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
-      final token = response.data?['token'] as String?;
-      if (token == null || token.isEmpty) {
-        throw const AppException('Login na API não retornou token.');
-      }
-      _token = token;
-      _dio.options.headers['Authorization'] = 'Bearer $token';
-    } on DioException catch (error) {
-      final status = error.response?.statusCode;
-      if (status == 401 || status == 403) {
-        throw const AppException('Credenciais da API recusadas.');
-      }
+    if (!isConfigured) {
       throw const AppException(
-        'Não foi possível autenticar na API A Bíblia Digital.',
+        'Chave da Bíblia API não configurada. Informe BIBLIA_API_KEY no build.',
       );
     }
+
+    _dio.options.headers['X-API-Key'] = _apiKey;
+    _configured = true;
   }
 }

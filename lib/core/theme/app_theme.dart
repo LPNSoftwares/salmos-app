@@ -1,12 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const deepBlue = Color(0xFF071B3D);
   static const royalBlue = Color(0xFF102F66);
-  static const gold = Color(0xFFD9AA48);
-  static const softGold = Color(0xFFF1D48A);
-  static const ivory = Color(0xFFFFF8EA);
+  static const skyBlue = Color(0xFF4F8EFF);
+  static const gold = Color(0xFFE4B34F);
+  static const softGold = Color(0xFFFFD978);
+  static const ivory = Color(0xFFFFFBF4);
+
+  static SystemUiOverlayStyle systemOverlayStyle(Brightness brightness) {
+    final iconBrightness = brightness == Brightness.dark
+        ? Brightness.light
+        : Brightness.dark;
+    return SystemUiOverlayStyle(
+      statusBarIconBrightness: iconBrightness,
+      statusBarBrightness: brightness,
+      systemNavigationBarIconBrightness: iconBrightness,
+    );
+  }
 
   static ThemeData light() {
     final colorScheme = ColorScheme.fromSeed(
@@ -14,9 +27,9 @@ class AppTheme {
       brightness: Brightness.light,
       primary: royalBlue,
       secondary: gold,
-      surface: ivory,
-      onSurface: const Color(0xFF121826),
-      onSurfaceVariant: const Color(0xFF354053),
+      surface: const Color(0xFFF8FAFF),
+      onSurface: const Color(0xFF172033),
+      onSurfaceVariant: const Color(0xFF5F6B7C),
     );
     return _base(colorScheme, isDark: false);
   }
@@ -27,7 +40,7 @@ class AppTheme {
       brightness: Brightness.dark,
       primary: softGold,
       secondary: gold,
-      surface: const Color(0xFF0B1830),
+      surface: const Color(0xFF071426),
       onSurface: const Color(0xFFF8FAFC),
       onSurfaceVariant: const Color(0xFFD7DEE9),
     );
@@ -64,6 +77,7 @@ class AppTheme {
       iconTheme: IconThemeData(color: iconColor),
       primaryIconTheme: IconThemeData(color: iconColor),
       scaffoldBackgroundColor: colorScheme.surface,
+      splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -76,6 +90,7 @@ class AppTheme {
         ),
         iconTheme: IconThemeData(color: iconColor),
         actionsIconTheme: IconThemeData(color: iconColor),
+        systemOverlayStyle: systemOverlayStyle(colorScheme.brightness),
       ),
       listTileTheme: ListTileThemeData(
         textColor: textColor,
@@ -91,13 +106,19 @@ class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : Colors.white.withValues(alpha: 0.84),
         labelStyle: TextStyle(color: mutedTextColor),
         hintStyle: TextStyle(color: mutedTextColor),
         prefixIconColor: iconColor,
         enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: mutedTextColor.withValues(alpha: 0.45)),
         ),
         focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: colorScheme.secondary, width: 1.4),
         ),
       ),
@@ -113,7 +134,7 @@ class AppTheme {
         secondaryLabelStyle: TextStyle(color: textColor),
         iconTheme: IconThemeData(color: iconColor, size: 18),
         side: BorderSide(color: mutedTextColor.withValues(alpha: 0.22)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: isDark
@@ -123,19 +144,58 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 52),
-          backgroundColor: isDark
-              ? const Color(0xFF18375F)
-              : const Color(0xFFE9EDF5),
-          foregroundColor: isDark ? Colors.white : textColor,
+          minimumSize: const Size(48, 54),
+          backgroundColor: isDark ? softGold : royalBlue,
+          foregroundColor: isDark ? deepBlue : Colors.white,
+          textStyle: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
           disabledForegroundColor: mutedTextColor.withValues(alpha: 0.6),
           disabledBackgroundColor: isDark
               ? const Color(0xFF12243D)
               : const Color(0xFFDDE3EC),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(20),
           ),
+          elevation: 0,
         ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: isDark ? softGold : royalBlue,
+        foregroundColor: isDark ? deepBlue : Colors.white,
+        elevation: 8,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 76,
+        elevation: 0,
+        backgroundColor: isDark
+            ? const Color(0xFF08182C).withValues(alpha: 0.98)
+            : Colors.white.withValues(alpha: 0.98),
+        indicatorColor: isDark
+            ? softGold.withValues(alpha: 0.18)
+            : royalBlue.withValues(alpha: 0.10),
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return IconThemeData(
+            color: selected ? (isDark ? softGold : royalBlue) : mutedTextColor,
+            size: selected ? 26 : 23,
+          );
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return GoogleFonts.inter(
+            color: selected ? (isDark ? softGold : royalBlue) : mutedTextColor,
+            fontSize: 11,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          );
+        }),
+      ),
+      dividerTheme: DividerThemeData(
+        color: mutedTextColor.withValues(alpha: 0.14),
+        thickness: 1,
+        space: 1,
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(

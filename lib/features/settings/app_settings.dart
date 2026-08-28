@@ -44,9 +44,9 @@ class AppSettings {
                   ? a.minute.compareTo(b.minute)
                   : a.hour.compareTo(b.hour),
             ),
-      bibleVersion:
-          (json['bibleVersion'] as String? ?? ApiConstants.defaultVersion)
-              .toLowerCase(),
+      bibleVersion: ApiConstants.normalizeVersion(
+        json['bibleVersion'] as String?,
+      ),
       themeMode: ThemeMode.values.firstWhere(
         (mode) => mode.name == json['themeMode'],
         orElse: () => ThemeMode.system,

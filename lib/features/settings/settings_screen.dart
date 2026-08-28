@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_strings.dart';
+import '../../core/constants/api_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/app_background.dart';
 import '../../shared/widgets/app_footer_nav.dart';
@@ -12,7 +13,7 @@ import '../tts/presentation/tts_settings_screen.dart';
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  static const versions = ['nvi', 'acf', 'aa'];
+  static const versions = ApiConstants.supportedVersions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
