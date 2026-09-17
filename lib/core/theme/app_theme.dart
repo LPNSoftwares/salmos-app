@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const deepBlue = Color(0xFF071B3D);
-  static const royalBlue = Color(0xFF102F66);
+  static const royalBlue = Color(0xFF245F65);
   static const skyBlue = Color(0xFF4F8EFF);
   static const gold = Color(0xFFE4B34F);
   static const softGold = Color(0xFFFFD978);
@@ -51,20 +50,29 @@ class AppTheme {
     final textColor = colorScheme.onSurface;
     final mutedTextColor = colorScheme.onSurfaceVariant;
     final iconColor = isDark ? softGold : royalBlue;
-    final baseTextTheme = GoogleFonts.cormorantGaramondTextTheme();
+    final baseTextTheme = ThemeData(
+      brightness: colorScheme.brightness,
+    ).textTheme;
     final textTheme =
         _forceTextColor(
           baseTextTheme.copyWith(
-            bodyMedium: GoogleFonts.inter(),
-            bodyLarge: GoogleFonts.inter(),
-            labelLarge: GoogleFonts.inter(fontWeight: FontWeight.w700),
-            titleMedium: GoogleFonts.inter(fontWeight: FontWeight.w700),
+            bodyMedium: TextStyle(fontFamily: 'Roboto'),
+            bodyLarge: TextStyle(fontFamily: 'Roboto'),
+            labelLarge: TextStyle(
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w700,
+            ),
+            titleMedium: TextStyle(
+              fontFamily: 'Roboto',
+              fontWeight: FontWeight.w700,
+            ),
           ),
           textColor,
         ).copyWith(
-          bodySmall: GoogleFonts.inter(color: mutedTextColor),
-          labelSmall: GoogleFonts.inter(color: mutedTextColor),
-          labelMedium: GoogleFonts.inter(
+          bodySmall: TextStyle(fontFamily: 'Roboto', color: mutedTextColor),
+          labelSmall: TextStyle(fontFamily: 'Roboto', color: mutedTextColor),
+          labelMedium: TextStyle(
+            fontFamily: 'Roboto',
             color: mutedTextColor,
             fontWeight: FontWeight.w700,
           ),
@@ -83,7 +91,8 @@ class AppTheme {
         elevation: 0,
         foregroundColor: textColor,
         backgroundColor: Colors.transparent,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
+          fontFamily: 'Roboto',
           color: textColor,
           fontSize: 20,
           fontWeight: FontWeight.w800,
@@ -95,12 +104,14 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         textColor: textColor,
         iconColor: iconColor,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
+          fontFamily: 'Roboto',
           color: textColor,
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
-        subtitleTextStyle: GoogleFonts.inter(
+        subtitleTextStyle: TextStyle(
+          fontFamily: 'Roboto',
           color: mutedTextColor,
           fontSize: 13,
         ),
@@ -110,8 +121,8 @@ class AppTheme {
         fillColor: isDark
             ? Colors.white.withValues(alpha: 0.06)
             : Colors.white.withValues(alpha: 0.84),
-        labelStyle: TextStyle(color: mutedTextColor),
-        hintStyle: TextStyle(color: mutedTextColor),
+        labelStyle: TextStyle(fontFamily: 'Roboto', color: mutedTextColor),
+        hintStyle: TextStyle(fontFamily: 'Roboto', color: mutedTextColor),
         prefixIconColor: iconColor,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -123,15 +134,19 @@ class AppTheme {
         ),
       ),
       dropdownMenuTheme: DropdownMenuThemeData(
-        textStyle: TextStyle(color: textColor),
+        textStyle: TextStyle(fontFamily: 'Roboto', color: textColor),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: isDark
             ? const Color(0xFF182642)
             : const Color(0xFFF0F3F8),
         selectedColor: colorScheme.secondaryContainer,
-        labelStyle: TextStyle(color: textColor, fontWeight: FontWeight.w700),
-        secondaryLabelStyle: TextStyle(color: textColor),
+        labelStyle: TextStyle(
+          fontFamily: 'Roboto',
+          color: textColor,
+          fontWeight: FontWeight.w700,
+        ),
+        secondaryLabelStyle: TextStyle(fontFamily: 'Roboto', color: textColor),
         iconTheme: IconThemeData(color: iconColor, size: 18),
         side: BorderSide(color: mutedTextColor.withValues(alpha: 0.22)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -140,14 +155,18 @@ class AppTheme {
         backgroundColor: isDark
             ? const Color(0xFF1E293B)
             : const Color(0xFF111827),
-        contentTextStyle: const TextStyle(color: Colors.white),
+        contentTextStyle: const TextStyle(
+          fontFamily: 'Roboto',
+          color: Colors.white,
+        ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(48, 54),
           backgroundColor: isDark ? softGold : royalBlue,
           foregroundColor: isDark ? deepBlue : Colors.white,
-          textStyle: GoogleFonts.inter(
+          textStyle: TextStyle(
+            fontFamily: 'Roboto',
             fontSize: 15,
             fontWeight: FontWeight.w800,
           ),
@@ -185,7 +204,8 @@ class AppTheme {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.inter(
+          return TextStyle(
+            fontFamily: 'Roboto',
             color: selected ? (isDark ? softGold : royalBlue) : mutedTextColor,
             fontSize: 11,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,

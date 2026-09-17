@@ -1,5 +1,5 @@
 class AppStrings {
-  static const appName = 'Salmo do Dia';
+  static const appName = 'Salmos';
   static const home = 'Hoje';
   static const favorites = 'Favoritos';
   static const history = 'Histórico';
@@ -24,5 +24,5 @@ class AppStrings {
   static const emptyHistory = 'Os últimos Salmos recebidos aparecerão aqui.';
   static const notificationFallbackTitle = 'Abra o Salmo do Dia';
   static const notificationFallbackBody =
-      'Conecte-se ao app para receber novos Salmos no cache.';
+      'Reserve um momento para ler a Bíblia salva no seu aparelho.';
 }

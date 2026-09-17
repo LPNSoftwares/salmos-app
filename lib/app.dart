@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -5,10 +6,9 @@ import 'package:go_router/go_router.dart';
 
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
-import 'features/favorites/favorites_screen.dart';
-import 'features/history/history_screen.dart';
+import 'features/bible/collection_screen.dart';
 import 'features/psalm/presentation/app_controller.dart';
-import 'features/psalm/presentation/home_screen.dart';
+import 'features/bible/bible_screens.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/tts/presentation/listen_psalm_screen.dart';
 
@@ -21,6 +21,7 @@ class SalmoDoDiaApp extends ConsumerStatefulWidget {
 
 class _SalmoDoDiaAppState extends ConsumerState<SalmoDoDiaApp> {
   late final GoRouter _router;
+  StreamSubscription<String>? _notificationSubscription;
 
   @override
   void initState() {
@@ -29,15 +30,33 @@ class _SalmoDoDiaAppState extends ConsumerState<SalmoDoDiaApp> {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) => const OfflineHomeScreen(),
           routes: [
             GoRoute(
+              path: 'bible',
+              builder: (context, state) => const BibleLibraryScreen(),
+            ),
+            GoRoute(
+              path: 'psalms',
+              builder: (context, state) =>
+                  const BibleLibraryScreen(psalmsOnly: true),
+            ),
+            GoRoute(
+              path: 'discover',
+              builder: (context, state) => const DiscoverScreen(),
+            ),
+            GoRoute(
+              path: 'read',
+              builder: (context, state) => const BibleReaderScreen(),
+            ),
+            GoRoute(
               path: 'favorites',
-              builder: (context, state) => const FavoritesScreen(),
+              builder: (context, state) => const CollectionScreen(),
             ),
             GoRoute(
               path: 'history',
-              builder: (context, state) => const HistoryScreen(),
+              builder: (context, state) =>
+                  const CollectionScreen(history: true),
             ),
             GoRoute(
               path: 'settings',
@@ -52,14 +71,24 @@ class _SalmoDoDiaAppState extends ConsumerState<SalmoDoDiaApp> {
       ],
     );
 
-    Future.microtask(() {
-      ref.read(appControllerProvider).initialize();
-      ref.read(appControllerProvider).notificationPayloads.listen((_) {
+    Future.microtask(() async {
+      if (!mounted) return;
+      final controller = ref.read(appControllerProvider);
+      _notificationSubscription = controller.notificationPayloads.listen((_) {
         if (mounted) {
-          _router.go('/');
+          _router.go('/read');
         }
       });
+      await controller.initialize();
+      if (mounted && controller.openedFromNotification) _router.go('/read');
     });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    _router.dispose();
+    super.dispose();
   }
 
   @override

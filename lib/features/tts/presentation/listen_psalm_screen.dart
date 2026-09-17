@@ -81,8 +81,8 @@ class _ListenPsalmScreenState extends ConsumerState<ListenPsalmScreen> {
                         label: Text(psalm.reference),
                         side: const BorderSide(color: AppTheme.softGold),
                         backgroundColor: Colors.transparent,
-                        labelStyle: const TextStyle(
-                          color: AppTheme.softGold,
+                        labelStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -114,7 +114,11 @@ class _ListenPsalmScreenState extends ConsumerState<ListenPsalmScreen> {
                           ref.read(ttsServiceProvider).toggle(psalm),
                       onNext: () async {
                         await ref.read(ttsServiceProvider).stop();
-                        await ref.read(appControllerProvider).fetchNewPsalm();
+                        await ref
+                            .read(appControllerProvider)
+                            .randomPassage(
+                              psalmsOnly: psalm.bookAbbrev == 'sl',
+                            );
                         final next = ref
                             .read(appControllerProvider)
                             .currentPsalm;
@@ -160,12 +164,12 @@ class _Header extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: IconButton(
-            onPressed: () => context.pop(),
+            onPressed: () => context.go('/read'),
             icon: const Icon(Icons.arrow_back_rounded),
           ),
         ),
         Text(
-          'Ouça os Salmos',
+          'Ouvir a Palavra',
           style: Theme.of(
             context,
           ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
@@ -281,7 +285,10 @@ class _PlayerControls extends StatelessWidget {
           height: 78,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.softGold, width: 2),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+            ),
           ),
           child: IconButton(
             onPressed: onToggle,
@@ -400,7 +407,7 @@ class _VoiceSummary extends ConsumerWidget {
     final tts = ref.read(ttsServiceProvider);
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF061B33),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -459,7 +466,7 @@ class _VoiceSummary extends ConsumerWidget {
   }) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF061B33),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -484,8 +491,8 @@ class _VoiceSummary extends ConsumerWidget {
                     Center(
                       child: Text(
                         display(current),
-                        style: const TextStyle(
-                          color: AppTheme.softGold,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                         ),
@@ -539,7 +546,7 @@ class _SummaryTile extends StatelessWidget {
     return SizedBox(
       height: 78,
       child: Material(
-        color: const Color(0xFF072445).withValues(alpha: 0.72),
+        color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           onTap: onTap,
@@ -552,7 +559,11 @@ class _SummaryTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [Icon(icon, size: 30)],
+              children: [
+                Icon(icon, size: 24),
+                const SizedBox(height: 4),
+                Text(title, style: Theme.of(context).textTheme.labelSmall),
+              ],
             ),
           ),
         ),

@@ -22,18 +22,17 @@ class TtsService extends ChangeNotifier {
   String? errorMessage;
   double progress = 0;
   bool hasPtBrVoice = true;
-  bool _initialized = false;
+  Future<void>? _initializing;
+  int _speechGeneration = 0;
   Psalm? _currentPsalm;
   DateTime? _startedAt;
 
   bool get isSpeaking => playbackState == TtsPlaybackState.speaking;
   bool get isLoading => playbackState == TtsPlaybackState.loading;
 
-  Future<void> initialize() async {
-    if (_initialized) {
-      return;
-    }
-    _initialized = true;
+  Future<void> initialize() => _initializing ??= _initialize();
+
+  Future<void> _initialize() async {
     settings = _storage.load();
     _bindHandlers();
     try {
@@ -47,6 +46,7 @@ class TtsService extends ChangeNotifier {
 
   Future<void> speakPsalm(Psalm psalm) async {
     await initialize();
+    final generation = ++_speechGeneration;
     playbackState = TtsPlaybackState.loading;
     errorMessage = null;
     progress = 0;
@@ -54,13 +54,31 @@ class TtsService extends ChangeNotifier {
     notifyListeners();
 
     try {
+      if (voices.isEmpty) {
+        _setError(
+          'Nenhuma voz offline instalada. A leitura do texto continua disponível.',
+        );
+        return;
+      }
       await _applySettings();
       final intro = psalm.isFullChapter
-          ? 'Salmos capítulo ${psalm.chapter}.'
-          : 'Salmos capítulo ${psalm.chapter}, versículo ${psalm.number}.';
-      final result = await _tts.speak('$intro ${psalm.text}');
-      if (result != 1) {
-        _setError('Não foi possível iniciar a leitura neste aparelho.');
+          ? '${psalm.bookName} capítulo ${psalm.chapter}.'
+          : '${psalm.bookName} capítulo ${psalm.chapter}, versículo ${psalm.number}.';
+      final text = '$intro ${psalm.text}';
+      // Android engines limit individual utterances. Read long chapters in order.
+      var offset = 0;
+      while (offset < text.length && generation == _speechGeneration) {
+        var end = (offset + 3000).clamp(0, text.length);
+        if (end < text.length) {
+          final space = text.lastIndexOf(' ', end);
+          if (space > offset) end = space;
+        }
+        final result = await _tts.speak(text.substring(offset, end).trim());
+        if (result != 1 || playbackState == TtsPlaybackState.error) {
+          _setError('Não foi possível iniciar a leitura neste aparelho.');
+          break;
+        }
+        offset = end;
       }
     } catch (_) {
       _setError('Não foi possível iniciar a leitura do Salmo.');
@@ -68,6 +86,7 @@ class TtsService extends ChangeNotifier {
   }
 
   Future<void> stop() async {
+    _speechGeneration++;
     try {
       await _tts.stop();
       playbackState = TtsPlaybackState.stopped;
@@ -169,6 +188,11 @@ class TtsService extends ChangeNotifier {
       final rawVoices = await _tts.getVoices;
       final parsed = (rawVoices as List<dynamic>)
           .whereType<Map<dynamic, dynamic>>()
+          .where(
+            (voice) =>
+                voice['network_required']?.toString() == '0' &&
+                !(voice['features']?.toString() ?? '').contains('notInstalled'),
+          )
           .map(
             (voice) => TtsVoice(
               name: (voice['name'] ?? voice['identifier'] ?? '').toString(),
@@ -208,7 +232,8 @@ class TtsService extends ChangeNotifier {
     await _tts.setSpeechRate(settings.speechRate);
     await _tts.setPitch(settings.pitch);
     await _tts.setVolume(settings.volume);
-    final voice = settings.selectedVoice;
+    final voice =
+        settings.selectedVoice ?? (voices.isEmpty ? null : voices.first);
     if (voice != null) {
       await _tts.setVoice(voice.toTtsMap());
     }

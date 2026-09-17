@@ -10,7 +10,7 @@ import '../../../core/errors/app_exception.dart';
 import '../../../shared/services/local_storage_service.dart';
 import '../../notifications/notification_service.dart';
 import '../../settings/app_settings.dart';
-import '../data/fallback_psalms.dart';
+
 import '../data/psalm_repository.dart';
 import '../domain/psalm.dart';
 
@@ -47,6 +47,7 @@ class AppController extends ChangeNotifier {
   bool isRefreshing = false;
   bool isSearchingChapter = false;
   String? message;
+  bool openedFromNotification = false;
 
   Stream<String> get notificationPayloads => _notifications.payloads;
 
@@ -54,62 +55,70 @@ class AppController extends ChangeNotifier {
       currentPsalm != null &&
       favorites.any((item) => item.id == currentPsalm!.id);
 
+  List<BibleBook> get books => _repository.books;
+  Psalm? dailyPassage;
+  int get verseCount => _repository.verseCount;
+  int get chapterCount => _repository.chapterCount;
+  List<Psalm> search(String query) => _repository.search(query);
+
   Future<void> initialize() async {
-    settings = _storage.getSettings();
-    favorites = _storage.getFavorites();
-    history = _storage.getHistory();
-    cache = _storage.getPsalmCache();
-    currentPsalm =
-        _storage.getLastPsalm() ?? (history.isNotEmpty ? history.first : null);
-    isLoading = false;
+    isLoading = true;
+    message = null;
     notifyListeners();
-
-    if (cache.isEmpty) {
-      cache = FallbackPsalms.all(settings.bibleVersion);
-      await _storage.savePsalmCache(cache);
+    try {
+      settings = _storage.getSettings().copyWith(bibleVersion: 'vfl');
+      favorites = _storage.getFavorites();
+      history = _storage.getHistory();
+      await _repository.initialize();
+      dailyPassage = await _repository.dailyVerse();
+      currentPsalm = _storage.getLastPsalm() ?? dailyPassage;
+      cache = [];
+      for (var i = 0; i < 8; i++) {
+        cache.add(await _repository.fetchRandomPsalm('vfl'));
+      }
+      await _storage.saveSettings(settings);
+      final launchPayload = _notifications.consumeLaunchPayload();
+      if (launchPayload != null && launchPayload.isNotEmpty) {
+        openedFromNotification = true;
+        await _openNotificationPsalm(launchPayload);
+      }
+      await _scheduleNotifications();
+    } on AppException catch (error) {
+      message = error.message;
+    } catch (_) {
+      message = 'Não foi possível carregar os dados locais. Tente novamente.';
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-    if (currentPsalm == null) {
-      currentPsalm = cache.first;
-      history = [currentPsalm!, ...history].take(50).toList();
-      await _storage.saveLastPsalm(currentPsalm!);
-      await _storage.saveHistory(history);
-    }
-    notifyListeners();
-
-    await fetchNewPsalm(showFallbackMessage: false);
-    final launchPayload = _notifications.consumeLaunchPayload();
-    if (launchPayload != null && launchPayload.isNotEmpty) {
-      await _openNotificationPsalm(launchPayload);
-    }
-    await _scheduleNotifications();
   }
 
-  Future<void> fetchNewPsalm({bool showFallbackMessage = true}) async {
+  Future<void> fetchNewPsalm({bool showFallbackMessage = true}) =>
+      randomPassage(psalmsOnly: true);
+
+  Future<void> randomPassage({bool psalmsOnly = false}) async {
+    if (isRefreshing) return;
     isRefreshing = true;
     message = null;
     notifyListeners();
-
     try {
-      final psalm = await _repository.fetchRandomPsalm(settings.bibleVersion);
-      await _selectPsalm(psalm);
-      await _refreshCacheIfNeeded();
+      await _selectPsalm(await _repository.randomVerse(psalmsOnly: psalmsOnly));
     } on AppException catch (error) {
-      message = error.message.contains('Limite')
-          ? AppStrings.limitReached
-          : showFallbackMessage
-          ? error.message
-          : AppStrings.apiUnavailableUsingCache;
-      if (currentPsalm == null) {
-        cache = FallbackPsalms.all(settings.bibleVersion);
-        currentPsalm = cache.first;
-        await _storage.savePsalmCache(cache);
-        await _storage.saveLastPsalm(currentPsalm!);
-      } else if (showFallbackMessage && cache.length > 1) {
-        await _selectPsalm(_nextCachedPsalm());
-      }
+      message = error.message;
     } finally {
       isRefreshing = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> openChapter(String abbrev, int chapter) async {
+    try {
+      await _selectPsalm(await _repository.readChapter(abbrev, chapter));
+      return true;
+    } on AppException catch (error) {
+      message = error.message;
+      notifyListeners();
+      return false;
     }
   }
 
@@ -166,14 +175,14 @@ class AppController extends ChangeNotifier {
 
   Future<void> updateNotificationsEnabled(bool enabled) async {
     settings = settings.copyWith(notificationsEnabled: enabled);
-    await _persistSettingsAndReschedule();
+    await _persistSettingsAndReschedule(reschedule: true);
   }
 
   Future<void> updateNotificationTime(int index, TimeOfDay time) async {
     final times = [...settings.notificationTimes];
     times[index] = time;
     settings = settings.copyWith(notificationTimes: times);
-    await _persistSettingsAndReschedule();
+    await _persistSettingsAndReschedule(reschedule: true);
   }
 
   Future<void> updateBibleVersion(String version) async {
@@ -213,45 +222,24 @@ class AppController extends ChangeNotifier {
     await _storage.saveLastPsalm(currentPsalm!);
     await _storage.saveHistory(history);
     await _storage.savePsalmCache(cache);
-    await _scheduleNotifications();
     notifyListeners();
   }
 
-  Future<void> _refreshCacheIfNeeded() async {
-    if (cache.length >= 8) {
-      return;
-    }
-    final target = 8 - cache.length;
-    for (var i = 0; i < target; i++) {
-      try {
-        final psalm = await _repository.fetchRandomPsalm(settings.bibleVersion);
-        cache = [
-          psalm,
-          ...cache.where((item) => item.id != psalm.id),
-        ].take(20).toList();
-      } on AppException {
-        break;
-      }
-    }
-    await _storage.savePsalmCache(cache);
-  }
-
-  Psalm _nextCachedPsalm() {
-    final index = cache.indexWhere((item) => item.id == currentPsalm?.id);
-    if (index == -1 || index == cache.length - 1) {
-      return cache.first;
-    }
-    return cache[index + 1];
-  }
-
-  Future<void> _persistSettingsAndReschedule() async {
+  Future<void> _persistSettingsAndReschedule({bool reschedule = false}) async {
     await _storage.saveSettings(settings);
-    await _scheduleNotifications();
+    if (reschedule) await _scheduleNotifications();
     notifyListeners();
   }
 
-  Future<void> _scheduleNotifications() {
-    return _notifications.scheduleDailyPsalms(settings: settings, cache: cache);
+  Future<void> _scheduleNotifications() async {
+    try {
+      await _notifications.scheduleDailyPsalms(
+        settings: settings,
+        cache: cache,
+      );
+    } catch (_) {
+      // A denied notification permission must never prevent offline reading.
+    }
   }
 
   Future<void> _openNotificationPsalm(String payload) async {

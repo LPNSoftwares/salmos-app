@@ -43,7 +43,7 @@ class FavoritesScreen extends ConsumerWidget {
                             trailing: Icons.chevron_right_rounded,
                             onTap: () {
                               controller.showPsalm(psalm);
-                              context.go('/');
+                              context.go('/read');
                             },
                           );
                         },

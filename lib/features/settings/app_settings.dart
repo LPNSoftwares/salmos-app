@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/api_constants.dart';
-
 class AppSettings {
   const AppSettings({
     required this.notificationsEnabled,
@@ -19,7 +17,7 @@ class AppSettings {
         TimeOfDay(hour: 12, minute: 0),
         TimeOfDay(hour: 19, minute: 0),
       ],
-      bibleVersion: ApiConstants.defaultVersion,
+      bibleVersion: 'vfl',
       themeMode: ThemeMode.system,
       readingFontScale: 1.0,
     );
@@ -44,9 +42,7 @@ class AppSettings {
                   ? a.minute.compareTo(b.minute)
                   : a.hour.compareTo(b.hour),
             ),
-      bibleVersion: ApiConstants.normalizeVersion(
-        json['bibleVersion'] as String?,
-      ),
+      bibleVersion: 'vfl',
       themeMode: ThemeMode.values.firstWhere(
         (mode) => mode.name == json['themeMode'],
         orElse: () => ThemeMode.system,

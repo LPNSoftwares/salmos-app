@@ -40,7 +40,7 @@ class TtsSettingsSection extends ConsumerWidget {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Nenhuma voz pt-BR foi encontrada. O app usará uma voz disponível no aparelho.',
+                      'Nenhuma voz offline pt-BR foi encontrada. A leitura em voz depende de uma voz local instalada no aparelho.',
                     ),
                   ),
                 ],

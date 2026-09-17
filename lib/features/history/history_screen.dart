@@ -46,7 +46,7 @@ class HistoryScreen extends ConsumerWidget {
                             child: ListTile(
                               onTap: () {
                                 controller.showPsalm(psalm);
-                                context.go('/');
+                                context.go('/read');
                               },
                               leading: const Icon(Icons.auto_stories_rounded),
                               title: Text(

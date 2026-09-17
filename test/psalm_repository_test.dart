@@ -1,96 +1,87 @@
-import 'package:dio/dio.dart';
+import 'dart:io';
+import 'dart:math';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:salmododia_app/core/constants/api_constants.dart';
-import 'package:salmododia_app/features/psalm/data/psalm_repository.dart';
-import 'package:salmododia_app/shared/services/api_auth_service.dart';
+import 'package:salmododia_app/features/bible/bible_repository.dart';
 
-void main() {
-  group('PsalmRepository com Bíblia API v2', () {
-    test('busca e converte um Salmo aleatório', () async {
-      late RequestOptions capturedRequest;
-      final dio = _dioRespondingWith((request) {
-        capturedRequest = request;
-        return {
-          'data': {
-            'version': 'NVI',
-            'book': {
-              'id': 19,
-              'name': 'Salmos',
-              'abbrev': 'sl',
-              'testament': 'VT',
-            },
-            'reference': 'Salmos 23:1',
-            'chapter': 23,
-            'verse': 1,
-            'text': 'O Senhor é o meu pastor.',
-          },
-        };
-      });
-      final repository = PsalmRepository(
-        dio,
-        ApiAuthService(dio, apiKey: 'bapi_test'),
-      );
-
-      final psalm = await repository.fetchRandomPsalm('nvi');
-
-      expect(capturedRequest.path, '/versions/NVI/books/sl/random');
-      expect(capturedRequest.headers['X-API-Key'], 'bapi_test');
-      expect(psalm.reference, 'Salmos 23:1');
-      expect(psalm.version, 'nvi');
-      expect(psalm.text, 'O Senhor é o meu pastor.');
-    });
-
-    test('busca e combina os versículos de um capítulo', () async {
-      late RequestOptions capturedRequest;
-      final dio = _dioRespondingWith((request) {
-        capturedRequest = request;
-        return {
-          'data': {
-            'version': 'ARA',
-            'book': {'id': 19, 'name': 'Salmos', 'abbrev': 'sl'},
-            'reference': 'Salmos 23',
-            'chapter': {'number': 23, 'verses': 2},
-            'verses': [
-              {'verse': 1, 'text': 'Primeiro versículo.'},
-              {'verse': 2, 'text': 'Segundo versículo.'},
-            ],
-          },
-        };
-      });
-      final repository = PsalmRepository(
-        dio,
-        ApiAuthService(dio, apiKey: 'bapi_test'),
-      );
-
-      final psalm = await repository.fetchPsalmChapter(
-        version: 'aa',
-        chapter: 23,
-      );
-
-      expect(capturedRequest.path, '/versions/ARA/books/sl/chapters/23');
-      expect(psalm.reference, 'Salmos 23');
-      expect(psalm.version, 'ara');
-      expect(psalm.text, '1. Primeiro versículo.\n\n2. Segundo versículo.');
-    });
-  });
+class FileBibleBundle extends CachingAssetBundle {
+  @override
+  Future<ByteData> load(String key) async {
+    final bytes = await File(key).readAsBytes();
+    return ByteData.sublistView(bytes);
+  }
 }
 
-Dio _dioRespondingWith(
-  Map<String, dynamic> Function(RequestOptions request) response,
-) {
-  final dio = Dio(BaseOptions(baseUrl: ApiConstants.baseUrl));
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (request, handler) {
-        handler.resolve(
-          Response<Map<String, dynamic>>(
-            requestOptions: request,
-            statusCode: 200,
-            data: response(request),
-          ),
-        );
-      },
-    ),
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  late PsalmRepository repository;
+  setUp(() {
+    repository = PsalmRepository(bundle: FileBibleBundle(), random: Random(42));
+  });
+
+  test(
+    'carrega integralmente os 66 livros e 1189 capítulos do JSON local',
+    () async {
+      await repository.initialize();
+      expect(repository.books.length, 66);
+      expect(repository.chapterCount, 1189);
+      expect(repository.verseCount, greaterThan(30000));
+      expect(repository.books.first.name, 'Gênesis');
+      expect(repository.books.last.name, 'Apocalipse');
+      final psalms = repository.books.firstWhere((b) => b.abbrev == 'sl');
+      expect(psalms.chapters.length, 150);
+      for (final book in repository.books) {
+        for (var chapter = 1; chapter <= book.chapters.length; chapter++) {
+          final passage = await repository.readChapter(book.abbrev, chapter);
+          expect(passage.version, 'vfl');
+          expect(
+            passage.text,
+            List.generate(
+              book.chapters[chapter - 1].length,
+              (v) => '${v + 1}. ${book.chapters[chapter - 1][v]}',
+            ).join('\n\n'),
+          );
+        }
+      }
+    },
   );
-  return dio;
+
+  test(
+    'sorteio de Salmos não repete versos no ciclo e respeita o livro',
+    () async {
+      final ids = <String>{};
+      for (var i = 0; i < 300; i++) {
+        final passage = await repository.randomVerse(psalmsOnly: true);
+        expect(passage.bookAbbrev, 'sl');
+        expect(ids.add(passage.id), isTrue);
+      }
+    },
+  );
+
+  test(
+    'sorteio geral inclui vários livros e a palavra do dia é estável',
+    () async {
+      final books = <String>{};
+      for (var i = 0; i < 100; i++) {
+        books.add((await repository.randomVerse()).bookAbbrev);
+      }
+      expect(books.length, greaterThan(15));
+      final date = DateTime(2026, 9, 17);
+      final first = await repository.dailyVerse(date);
+      final second = await repository.dailyVerse(date);
+      expect(first.id, second.id);
+    },
+  );
+
+  test('busca ignora acentos e capítulos inválidos são rejeitados', () async {
+    await repository.initialize();
+    expect(
+      repository.search('principio').any((p) => p.reference == 'Gênesis 1:1'),
+      isTrue,
+    );
+    expect(repository.search('zzzzsemresultado'), isEmpty);
+    expect(repository.readChapter('sl', 151), throwsException);
+    expect(repository.readChapter('gn', 0), throwsException);
+    expect(repository.readChapter('inexistente', 1), throwsException);
+  });
 }
